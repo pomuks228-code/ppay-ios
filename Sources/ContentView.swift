@@ -22,7 +22,7 @@ struct PPayApp: App {
     var body: some Scene {
         WindowGroup {
             // Ссылка на твой сервер API
-            WebView(url: URL(string: "https://rombank.pythonanywhere.com")!)
+            WebView(url: URL(string: "https://google.com")!)
                 .edgesIgnoringSafeArea(.all)
                 .statusBar(hidden: true)
         }
