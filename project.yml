@@ -1,0 +1,17 @@
+name: PPayTerminal
+options:
+  bundleIdPrefix: com.rombank
+  deploymentTarget:
+    iOS: "14.0"
+targets:
+  PPayTerminal:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    settings:
+      base:
+        INFOPLIST_FILE: Sources/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.rombank.ppayterminal
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGNING_ALLOWED: NO
