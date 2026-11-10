@@ -9,7 +9,7 @@ struct WebView: UIViewRepresentable {
         
         // Ищем файл index.html внутри нашего приложения
         if let url = Bundle.main.url(forResource: "index", withExtension: "html") {
-            // Разрешаем доступ к папке, чтобы подгрузились картинки и видео из папки assets
+            // Разрешаем доступ ко всей папке приложения, чтобы подтянулись assets
             let directoryURL = url.deletingLastPathComponent()
             webView.loadFileURL(url, allowingReadAccessTo: directoryURL)
         }
