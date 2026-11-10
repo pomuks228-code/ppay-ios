@@ -7,13 +7,15 @@ struct WebView: UIViewRepresentable {
         webView.configuration.allowsInlineMediaPlayback = true
         webView.configuration.mediaTypesRequiringUserActionForPlayback = []
         
-        // Ищем файл index.html внутри нашего приложения
-        if let url = Bundle.main.url(forResource: "index", withExtension: "html") {
-            // Разрешаем доступ ко всей папке приложения, чтобы подтянулись assets
-            let directoryURL = url.deletingLastPathComponent()
-            webView.loadFileURL(url, allowingReadAccessTo: directoryURL)
+        if let filepath = Bundle.main.path(forResource: "index", ofType: "html") {
+            do {
+                let html = try String(contentsOfFile: filepath)
+                let baseUrl = URL(fileURLWithPath: filepath).deletingLastPathComponent()
+                webView.loadHTMLString(html, baseURL: baseUrl)
+            } catch {
+                print("Ошибка загрузки HTML")
+            }
         }
-        
         return webView
     }
 
