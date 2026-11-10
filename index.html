@@ -1,0 +1,531 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>P-PAY</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; }
+    body { background: #000; height: 100vh; overflow: hidden; color: #fff; }
+
+    .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* --- ЭКРАН 1: НАСТРОЙКА --- */
+    #setup-screen { justify-content: center; align-items: center; background: url('assets/images/background.PNG') no-repeat center center; background-size: cover; z-index: 100; }
+    .setup-box { background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); padding: 40px; border-radius: 24px; text-align: center; width: 90%; max-width: 400px; }
+    .setup-box h1 { margin-bottom: 10px; font-size: 24px; }
+    .setup-box p { color: #aaa; margin-bottom: 20px; font-size: 14px; }
+    .setup-input { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #444; background: #111; color: #fff; font-size: 16px; margin-bottom: 20px; text-align: center; outline: none; }
+    .setup-input:focus { border-color: #4ade80; }
+    .setup-btn { width: 100%; padding: 18px; border: none; border-radius: 16px; background: #2C333E; color: #fff; font-size: 16px; font-weight: 600; margin-bottom: 15px; cursor: pointer; }
+    .setup-btn:active { background: #3b4453; }
+
+    /* --- ЭКРАН 2: ОЖИДАНИЕ (API) --- */
+    #idle-screen { z-index: 10; background-color: #d35400; }
+    #bg-css {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background-image: url('assets/images/main.PNG'); 
+        background-size: cover; background-position: center; background-repeat: no-repeat; z-index: 1;
+    }
+    .top-bar { position: absolute; top: 25px; left: 25px; right: 25px; display: flex; justify-content: space-between; align-items: center; z-index: 30; }
+    .pay-logo-trigger { width: 100px; height: 40px; background: url('assets/images/pay_logo.PNG') no-repeat center left; background-size: contain; cursor: pointer; opacity: 0.2; transition: opacity 0.2s; }
+    .pay-logo-trigger:active { opacity: 1; }
+    .top-right-box { display: flex; align-items: center; gap: 20px; }
+    .status-text { font-size: 12px; color: rgba(255,255,255,0.8); font-weight: 600; letter-spacing: 1px; }
+    .video-trigger-btn { font-size: 24px; color: #fff; cursor: pointer; opacity: 0.6; }
+
+    /* --- ЭКРАН 3: ВВОД СУММЫ --- */
+    #amount-screen { background: #000; padding: 30px 20px; z-index: 50; }
+    .amount-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .amount-logo-trigger { width: 80px; height: 30px; background: url('assets/images/pay_logo.PNG') no-repeat center left; background-size: contain; cursor: pointer; opacity: 0.2; }
+    .header-close { font-size: 24px; color: #666; cursor: pointer; font-weight: 300; }
+    .amount-title { text-align: center; color: #888; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: 600; }
+    .amount-value-container { display: flex; justify-content: center; align-items: baseline; margin-bottom: 40px; }
+    .amount-value { font-size: 56px; font-weight: 700; letter-spacing: -1px; }
+    .amount-currency { font-size: 40px; font-weight: 700; color: #888; margin-left: 10px; }
+    .cursor { display: inline-block; width: 3px; height: 50px; background: #fff; margin: 0 5px; animation: blink 1s infinite; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; flex: 1; max-height: 450px; }
+    .num-btn { background: #2C333E; border: none; border-radius: 22px; color: #fff; font-size: 32px; font-weight: 600; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+    .num-btn:active { background: #3b4453; }
+    .btn-back { background: transparent; border: 2px solid #2C333E; }
+    .btn-back svg { width: 30px; height: 30px; stroke: #f87171; fill: none; stroke-width: 2; }
+    .btn-check { background: transparent; border: 2px solid #2C333E; }
+    .btn-check svg { width: 35px; height: 35px; stroke: #4ade80; fill: none; stroke-width: 3; }
+
+    /* --- ЭКРАН 4: ОПЛАТА (pay.mp4) --- */
+    #payment-screen { z-index: 80; background: #000; justify-content: center; align-items: center; cursor: pointer; }
+    #pay-bg-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+    .payment-content { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; padding: 20px; margin-top: 50px; }
+    .pay-title { font-size: 20px; color: #fff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+    .pay-amount { font-size: 64px; font-weight: 800; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
+    .nfc-hint { margin-top: 50px; font-size: 16px; color: rgba(255,255,255,0.8); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+    .face-pay-btn {
+        margin-top: 40px; width: 200px; height: 60px;
+        background: url('assets/images/button_firstsetup.PNG') no-repeat center center;
+        background-size: cover; border: none; border-radius: 12px; cursor: pointer;
+        color: #fff; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .face-pay-btn:active { transform: scale(0.95); }
+
+    /* --- ЭКРАН 5: СКАНИРОВАНИЕ ЛИЦА (КАМЕРА) --- */
+    #face-overlay { 
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: #000; z-index: 120; display: none; 
+        flex-direction: column; justify-content: center; align-items: center; 
+        overflow: hidden;
+    }
+    #camera-feed { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.6; filter: grayscale(30%); }
+    .face-scanner {
+        position: relative; z-index: 10; width: 250px; height: 350px;
+        border: 3px solid rgba(74, 222, 128, 0.5); border-radius: 40px;
+        display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
+        padding-bottom: 20px; overflow: hidden;
+    }
+    .scan-line {
+        position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+        background: #4ade80; box-shadow: 0 0 15px 5px rgba(74, 222, 128, 0.4);
+        animation: scan 1.5s infinite linear;
+    }
+    @keyframes scan { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+    .face-status { position: relative; z-index: 10; color: #4ade80; font-weight: 600; font-size: 18px; margin-top: 30px; animation: pulse 1.5s infinite; text-shadow: 0 2px 5px #000; }
+
+    /* --- ЭКРАН 6: УСПЕХ (pay_finish.mp4) --- */
+    #success-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 150; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+    #success-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+    .success-content { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; text-shadow: 0 4px 15px rgba(0,0,0,0.9); }
+    .success-title { font-size: 48px; font-weight: 900; color: #4ade80; margin-bottom: 10px; }
+    .success-amount { font-size: 72px; font-weight: 800; color: #fff; }
+
+    /* --- ВИДЕО ОЖИДАНИЯ --- */
+    #video-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:150; display:none; justify-content:center; align-items:center; }
+    #idle-video { width:100%; height:100%; object-fit:cover; }
+
+    /* --- АДМИН ПАНЕЛЬ --- */
+    #admin-panel { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 10, 0.95); z-index: 200; display: none; flex-direction: column; padding: 40px; backdrop-filter: blur(5px); }
+    #admin-panel.active { display: flex; }
+    .admin-title { font-size: 24px; color: #facc15; font-weight: bold; margin-bottom: 30px; text-align: center; }
+    .admin-btn { padding: 20px; border-radius: 16px; border: none; font-size: 16px; font-weight: bold; margin-bottom: 15px; cursor: pointer; color: #fff; background: #2C333E; }
+    .btn-close { background: #dc2626; margin-top: auto; }
+    .btn-reset { background: #4b5563; font-size: 14px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+    <!-- 1. НАСТРОЙКА -->
+    <div id="setup-screen" class="screen">
+        <div class="setup-box">
+            <h1>Настройка P-PAY</h1>
+            <p>Задайте пароль для доступа к админке</p>
+            <input type="text" id="setup-password" class="setup-input" placeholder="Пароль" value="1234">
+            <button class="setup-btn" onclick="saveSetup('amount')">Ввод суммы (Касса)</button>
+            <button class="setup-btn" onclick="saveSetup('api')">Режим API (Ожидание)</button>
+        </div>
+    </div>
+
+    <!-- 2. ЭКРАН ОЖИДАНИЯ -->
+    <div id="idle-screen" class="screen">
+        <div id="bg-css"></div>
+        <div class="top-bar">
+            <div class="pay-logo-trigger" onclick="logoClick()"></div>
+            <div class="top-right-box">
+                <div class="status-text">API MODE</div>
+                <div class="video-trigger-btn" onclick="showVideo(event)">✕</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. ВВОД СУММЫ -->
+    <div id="amount-screen" class="screen">
+        <div class="amount-header">
+            <div class="amount-logo-trigger" onclick="logoClick()"></div>
+            <div class="header-close" onclick="showVideo(event)">✕</div>
+        </div>
+        <div class="amount-title">К оплате:</div>
+        <div class="amount-value-container">
+            <div class="amount-value" id="amount-display">0</div>
+            <div class="cursor"></div>
+            <div class="amount-currency">₽</div>
+        </div>
+        <div class="numpad">
+            <button class="num-btn" onclick="addNum('1')">1</button>
+            <button class="num-btn" onclick="addNum('2')">2</button>
+            <button class="num-btn" onclick="addNum('3')">3</button>
+            <button class="num-btn" onclick="addNum('4')">4</button>
+            <button class="num-btn" onclick="addNum('5')">5</button>
+            <button class="num-btn" onclick="addNum('6')">6</button>
+            <button class="num-btn" onclick="addNum('7')">7</button>
+            <button class="num-btn" onclick="addNum('8')">8</button>
+            <button class="num-btn" onclick="addNum('9')">9</button>
+            <button class="num-btn btn-back" onclick="deleteNum()"><svg viewBox="0 0 24 24"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg></button>
+            <button class="num-btn" onclick="addNum('0')">0</button>
+            <button class="num-btn btn-check" onclick="confirmPayment()"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></button>
+        </div>
+    </div>
+
+    <!-- 4. ЭКРАН ОПЛАТЫ -->
+    <div id="payment-screen" class="screen" onclick="handlePaymentClick(event)">
+        <video id="pay-bg-video" src="assets/pay.mp4" autoplay loop muted playsinline></video>
+        <div class="payment-content">
+            <div class="pay-title">К оплате:</div>
+            <div class="pay-amount" id="pay-screen-amount">0 ₽</div>
+            
+            <div class="nfc-hint" id="nfc-hint-text">Приложите карту или телефон (NFC)</div>
+            
+            <button class="face-pay-btn" onclick="event.stopPropagation(); startFacePay();">Оплатить по лицу</button>
+        </div>
+    </div>
+
+    <!-- 5. СКАНИРОВАНИЕ ЛИЦА -->
+    <div id="face-overlay">
+        <video id="camera-feed" autoplay playsinline muted></video>
+        <div class="face-scanner"><div class="scan-line"></div></div>
+        <div class="face-status">Сканирование лица...</div>
+    </div>
+
+    <!-- 6. УСПЕХ -->
+    <div id="success-overlay">
+        <video id="success-video" src="assets/pay_finish.mp4" playsinline></video>
+        <div class="success-content">
+            <div class="success-title">Оплачено!</div>
+            <div class="success-amount" id="success-amount-display">0 ₽</div>
+        </div>
+    </div>
+
+    <!-- 7. ВИДЕО ОЖИДАНИЯ -->
+    <div id="video-overlay" onclick="hideVideo(event)">
+        <video id="idle-video" src="assets/video.mp4" loop muted playsinline></video>
+        <div style="position:absolute; bottom:30px; color:#888;">[ Нажмите, чтобы скрыть ]</div>
+    </div>
+
+    <!-- АДМИН ПАНЕЛЬ -->
+    <div id="admin-panel">
+        <div class="admin-title">СИСТЕМНАЯ ПАНЕЛЬ</div>
+        <button class="admin-btn" onclick="changeMode('amount')">Режим: Ввод суммы</button>
+        <button class="admin-btn" onclick="changeMode('api')">Режим: API</button>
+        <button class="admin-btn btn-close" onclick="closeAdmin()">Закрыть</button>
+        <button class="admin-btn btn-reset" onclick="resetAll()">Сбросить настройки</button>
+    </div>
+
+<script>
+    const API_URL = 'https://rombank.pythonanywhere.com'; 
+    
+    let currentMode = 'api'; 
+    let currentAdminPassword = "1234";
+    
+    let apiInterval = null;
+    let currentApiStatus = 'idle';
+    let idleTimer;
+    let successTimeout;
+    
+    const videoOverlay = document.getElementById('video-overlay');
+    const videoElement = document.getElementById('idle-video');
+    const payBgVideo = document.getElementById('pay-bg-video');
+    const successVideo = document.getElementById('success-video');
+    const cameraFeed = document.getElementById('camera-feed');
+    
+    let cameraStream = null;
+
+    // --- ИНИЦИАЛИЗАЦИЯ И СОХРАНЕНИЯ ---
+    function init() {
+        const isSetup = localStorage.getItem('ppay_setup');
+        
+        if (isSetup === 'true') {
+            currentMode = localStorage.getItem('ppay_mode') || 'api';
+            currentAdminPassword = localStorage.getItem('ppay_password') || '1234';
+            
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            startMode(currentMode);
+        } else {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('setup-screen').classList.add('active');
+        }
+    }
+
+    function saveSetup(mode) {
+        const passInput = document.getElementById('setup-password').value.trim();
+        if (passInput !== "") currentAdminPassword = passInput;
+        currentMode = mode; 
+        
+        localStorage.setItem('ppay_setup', 'true');
+        localStorage.setItem('ppay_mode', currentMode);
+        localStorage.setItem('ppay_password', currentAdminPassword);
+        
+        document.getElementById('setup-screen').classList.remove('active');
+        startMode(mode);
+    }
+
+    function resetAll() {
+        if (confirm("Вы уверены? Терминал забудет пароль и настройки.")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    // --- УПРАВЛЕНИЕ ЭКРАНАМИ ---
+    function switchScreen(screenId) {
+        var screens = document.querySelectorAll('.screen');
+        for (var i = 0; i < screens.length; i++) {
+            screens[i].classList.remove('active');
+        }
+        if(screenId) document.getElementById(screenId).classList.add('active');
+    }
+
+    function startMode(mode) {
+        clearInterval(apiInterval); 
+        
+        if (mode === 'amount') {
+            switchScreen('amount-screen');
+        } else {
+            switchScreen('idle-screen');
+            startApiPolling(); 
+        }
+        hideVideo();
+    }
+
+    // --- ЛОГИКА API ---
+    function startApiPolling() {
+        if (apiInterval) clearInterval(apiInterval);
+        apiInterval = setInterval(async () => {
+            if (currentMode !== 'api') return;
+            try {
+                const res = await fetch(API_URL + '/api/status');
+                const data = await res.json();
+                handleApiState(data);
+            } catch (e) {
+                console.log("Ошибка связи с API");
+            }
+        }, 1000);
+    }
+
+    function handleApiState(data) {
+        if (data.status === 'idle') {
+            currentApiStatus = 'idle';
+            if (currentMode === 'api') {
+                document.getElementById('success-overlay').style.display = 'none';
+                successVideo.pause();
+                payBgVideo.pause();
+                clearTimeout(successTimeout);
+                
+                if (!document.getElementById('idle-screen').classList.contains('active')) {
+                    switchScreen('idle-screen');
+                }
+            }
+            return; 
+        }
+
+        if (document.getElementById('success-overlay').style.display === 'flex') return;
+
+        if (data.status === 'waiting') {
+            currentApiStatus = 'waiting';
+            if (!document.getElementById('payment-screen').classList.contains('active')) {
+                switchScreen('payment-screen');
+                payBgVideo.play().catch(e => console.log(e));
+            }
+            document.getElementById('pay-screen-amount').innerText = data.amount + ' ₽';
+            document.getElementById('success-amount-display').innerText = data.amount + ' ₽';
+            document.getElementById('nfc-hint-text').innerText = "Приложите карту или телефон (NFC)";
+            document.getElementById('nfc-hint-text').style.color = "rgba(255,255,255,0.8)";
+        } 
+        else if (data.status === 'pending') {
+            currentApiStatus = 'pending';
+            document.getElementById('nfc-hint-text').innerText = "Ожидание подтверждения...";
+            document.getElementById('nfc-hint-text').style.color = "#eab308";
+        } 
+        else if (data.status === 'success' && currentApiStatus !== 'success') {
+            currentApiStatus = 'success';
+            startSuccess(); 
+        }
+    }
+
+    async function sendApiPay() {
+        try {
+            await fetch(API_URL + '/api/pay', { method: 'POST' });
+        } catch(e) { console.log("Ошибка отправки оплаты"); }
+    }
+
+    function handlePaymentClick(event) {
+        if (currentMode === 'api') {
+            if (currentApiStatus === 'waiting') {
+                sendApiPay();
+                document.getElementById('nfc-hint-text').innerText = "Ожидание подтверждения...";
+                document.getElementById('nfc-hint-text').style.color = "#eab308";
+            }
+        } else {
+            startSuccess();
+        }
+    }
+
+    // --- ЛОГИКА ОЖИДАНИЯ (10 СЕК) ---
+    function showVideo(event) {
+        if(event) event.stopPropagation();
+        videoOverlay.style.display = 'flex';
+        videoElement.play().catch(e => console.log("Видео не может быть воспроизведено"));
+        clearTimeout(idleTimer); 
+    }
+
+    function hideVideo(event) {
+        if(event) event.stopPropagation();
+        videoOverlay.style.display = 'none';
+        videoElement.pause();
+        resetIdleTimer(); 
+    }
+
+    function resetIdleTimer() {
+        clearTimeout(idleTimer);
+        if (videoOverlay.style.display === 'flex') return;
+        
+        if (document.getElementById('amount-screen').classList.contains('active') || document.getElementById('idle-screen').classList.contains('active')) {
+            idleTimer = setTimeout(() => { showVideo(); }, 10000);
+        }
+    }
+
+    ['mousemove', 'mousedown', 'touchstart', 'keydown'].forEach(evt => {
+        document.addEventListener(evt, (e) => {
+            if (videoOverlay.style.display === 'flex') {
+                if (e.target !== videoOverlay && e.target !== videoElement) hideVideo(e);
+            } else {
+                resetIdleTimer();
+            }
+        }, true);
+    });
+
+    // --- 5 КЛИКОВ И АДМИНКА ---
+    let logoClicks = 0;
+    let clickTimer;
+    function logoClick() {
+        logoClicks++;
+        clearTimeout(clickTimer);
+        if (logoClicks >= 5) {
+            logoClicks = 0;
+            askPassword();
+        } else {
+            clickTimer = setTimeout(() => { logoClicks = 0; }, 1500);
+        }
+    }
+
+    function askPassword() {
+        const entered = prompt("Введите системный пароль:");
+        if (entered === currentAdminPassword) {
+            document.getElementById('admin-panel').classList.add('active');
+        } else if (entered !== null) {
+            alert("Неверный пароль!");
+        }
+    }
+
+    function closeAdmin() { document.getElementById('admin-panel').classList.remove('active'); }
+    
+    function changeMode(newMode) {
+        currentMode = newMode;
+        localStorage.setItem('ppay_mode', currentMode);
+        
+        alert("Режим изменен и сохранен!");
+        closeAdmin();
+        startMode(newMode);
+    }
+
+    // --- ВВОД СУММЫ (КАССА) ---
+    let currentAmount = "";
+    function addNum(num) {
+        if (currentAmount.length >= 6) return;
+        if (currentAmount === "0") currentAmount = "";
+        currentAmount += num;
+        updateDisplay();
+    }
+    
+    function deleteNum() { currentAmount = currentAmount.slice(0, -1); updateDisplay(); }
+
+    function updateDisplay() {
+        const display = currentAmount === "" ? "0" : currentAmount;
+        document.getElementById('amount-display').textContent = Number(display).toLocaleString('ru-RU');
+    }
+
+    function confirmPayment() {
+        if (currentAmount === "" || currentAmount === "0") return;
+        
+        let formattedAmount = Number(currentAmount).toLocaleString('ru-RU') + " ₽";
+        
+        document.getElementById('pay-screen-amount').innerText = formattedAmount;
+        document.getElementById('success-amount-display').innerText = formattedAmount;
+        
+        clearTimeout(idleTimer); 
+        
+        switchScreen('payment-screen');
+        payBgVideo.play().catch(e => console.log(e));
+    }
+
+    // --- УСПЕХ И ВИДЕО ---
+    function startSuccess() {
+        payBgVideo.pause();
+        document.getElementById('success-overlay').style.display = 'flex';
+        
+        successVideo.currentTime = 0;
+        successVideo.muted = false; 
+        successVideo.play().catch(e => {
+            console.log("Видео успеха не найдено, принудительный сброс через 3 сек");
+            setTimeout(successVideo.onended, 3000);
+        });
+
+        clearTimeout(successTimeout);
+        successTimeout = setTimeout(() => {
+            if (document.getElementById('success-overlay').style.display === 'flex') {
+                successVideo.onended();
+            }
+        }, 4000);
+    }
+
+    successVideo.onended = function() {
+        clearTimeout(successTimeout);
+        document.getElementById('success-overlay').style.display = 'none';
+        currentAmount = "";
+        updateDisplay();
+        
+        if (currentMode === 'amount') {
+            switchScreen('amount-screen');
+        } else {
+            switchScreen('idle-screen');
+            currentApiStatus = 'idle';
+            fetch(API_URL + '/api/reset', { method: 'POST' }).catch(e => console.log(e));
+        }
+        resetIdleTimer();
+    };
+
+    // --- ОПЛАТА ПО ЛИЦУ ---
+    async function startFacePay() {
+        switchScreen(''); 
+        document.getElementById('face-overlay').style.display = 'flex';
+        
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            cameraFeed.srcObject = cameraStream;
+        } catch (err) {
+            console.log("Камера недоступна", err);
+        }
+
+        setTimeout(() => {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            
+            document.getElementById('face-overlay').style.display = 'none';
+            
+            if (currentMode === 'api') {
+                sendApiPay();
+                switchScreen('payment-screen'); 
+                document.getElementById('nfc-hint-text').innerText = "Ожидание подтверждения...";
+                document.getElementById('nfc-hint-text').style.color = "#eab308";
+            } else {
+                startSuccess(); 
+            }
+        }, 3500);
+    }
+
+    window.onload = function() {
+        init();
+    };
+</script>
+</body>
+</html>
