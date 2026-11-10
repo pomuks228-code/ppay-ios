@@ -54,7 +54,7 @@
     .btn-check { background: transparent; border: 2px solid #2C333E; }
     .btn-check svg { width: 35px; height: 35px; stroke: #4ade80; fill: none; stroke-width: 3; }
 
-    /* --- ЭКРАН 4: ОПЛАТА (pay.mp4) --- */
+    /* --- ЭКРАН 4: ОПЛАТА --- */
     #payment-screen { z-index: 80; background: #000; justify-content: center; align-items: center; cursor: pointer; }
     #pay-bg-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; pointer-events: none; }
     .payment-content { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; padding: 20px; margin-top: 50px; }
@@ -70,29 +70,15 @@
     }
     .face-pay-btn:active { transform: scale(0.95); }
 
-    /* --- ЭКРАН 5: СКАНИРОВАНИЕ ЛИЦА (КАМЕРА) --- */
-    #face-overlay { 
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-        background: #000; z-index: 120; display: none; 
-        flex-direction: column; justify-content: center; align-items: center; 
-        overflow: hidden;
-    }
+    /* --- ЭКРАН 5: СКАНИРОВАНИЕ ЛИЦА --- */
+    #face-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 120; display: none; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; }
     #camera-feed { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; opacity: 0.6; filter: grayscale(30%); }
-    .face-scanner {
-        position: relative; z-index: 10; width: 250px; height: 350px;
-        border: 3px solid rgba(74, 222, 128, 0.5); border-radius: 40px;
-        display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
-        padding-bottom: 20px; overflow: hidden;
-    }
-    .scan-line {
-        position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-        background: #4ade80; box-shadow: 0 0 15px 5px rgba(74, 222, 128, 0.4);
-        animation: scan 1.5s infinite linear;
-    }
+    .face-scanner { position: relative; z-index: 10; width: 250px; height: 350px; border: 3px solid rgba(74, 222, 128, 0.5); border-radius: 40px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 20px; overflow: hidden; }
+    .scan-line { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: #4ade80; box-shadow: 0 0 15px 5px rgba(74, 222, 128, 0.4); animation: scan 1.5s infinite linear; }
     @keyframes scan { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
     .face-status { position: relative; z-index: 10; color: #4ade80; font-weight: 600; font-size: 18px; margin-top: 30px; animation: pulse 1.5s infinite; text-shadow: 0 2px 5px #000; }
 
-    /* --- ЭКРАН 6: УСПЕХ (pay_finish.mp4) --- */
+    /* --- ЭКРАН 6: УСПЕХ --- */
     #success-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 150; display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
     #success-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
     .success-content { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; text-shadow: 0 4px 15px rgba(0,0,0,0.9); }
@@ -122,6 +108,9 @@
 </style>
 </head>
 <body>
+
+    <!-- Звук оплаты -->
+    <audio id="pay-sound" src="assets/pay.mp3" preload="auto"></audio>
 
     <!-- 1. НАСТРОЙКА -->
     <div id="setup-screen" class="screen">
@@ -176,8 +165,7 @@
 
     <!-- 4. ЭКРАН ОПЛАТЫ -->
     <div id="payment-screen" class="screen" onclick="handlePaymentClick(event)">
-        <!-- Добавлен webkit-playsinline -->
-        <video id="pay-bg-video" src="assets/pay.mp4" autoplay loop muted playsinline webkit-playsinline></video>
+        <video id="pay-bg-video" src="assets/pay.mp4" loop muted playsinline webkit-playsinline></video>
         <div class="payment-content">
             <div class="pay-title">К оплате:</div>
             <div class="pay-amount" id="pay-screen-amount">0 ₽</div>
@@ -197,8 +185,7 @@
 
     <!-- 6. УСПЕХ -->
     <div id="success-overlay">
-        <!-- Добавлен webkit-playsinline -->
-        <video id="success-video" src="assets/pay_finish.mp4" playsinline webkit-playsinline></video>
+        <video id="success-video" src="assets/pay_finish.mp4" muted playsinline webkit-playsinline></video>
         <div class="success-content">
             <div class="success-title">Оплачено!</div>
             <div class="success-amount" id="success-amount-display">0 ₽</div>
@@ -207,7 +194,6 @@
 
     <!-- 7. ВИДЕО ОЖИДАНИЯ -->
     <div id="video-overlay" onclick="hideVideo(event)">
-        <!-- Добавлен webkit-playsinline -->
         <video id="idle-video" src="assets/video.mp4" loop muted playsinline webkit-playsinline></video>
         <div style="position:absolute; bottom:30px; color:#888;">[ Нажмите, чтобы скрыть ]</div>
     </div>
@@ -221,7 +207,7 @@
         <button class="admin-btn btn-reset" onclick="resetAll()">Сбросить настройки</button>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО ПАРОЛЯ (Вместо prompt) -->
+    <!-- МОДАЛЬНОЕ ОКНО ПАРОЛЯ -->
     <div id="password-modal">
         <div class="pass-box">
             <h2>Введите пароль</h2>
@@ -248,10 +234,20 @@
     const successVideo = document.getElementById('success-video');
     const cameraFeed = document.getElementById('camera-feed');
     const passInput = document.getElementById('admin-pass-input');
+    const paySound = document.getElementById('pay-sound');
     
     let cameraStream = null;
 
-    // --- ИНИЦИАЛИЗАЦИЯ И СОХРАНЕНИЯ ---
+    // ХАК ДЛЯ iOS: Разблокировка видео и звука при первом тапе
+    document.addEventListener('touchstart', function unlockMedia() {
+        if (videoElement) { videoElement.play().then(() => videoElement.pause()).catch(()=>{}); }
+        if (payBgVideo) { payBgVideo.play().then(() => payBgVideo.pause()).catch(()=>{}); }
+        if (successVideo) { successVideo.play().then(() => successVideo.pause()).catch(()=>{}); }
+        if (paySound) { paySound.play().then(() => { paySound.pause(); paySound.currentTime = 0; }).catch(()=>{}); }
+        document.removeEventListener('touchstart', unlockMedia);
+    }, { once: true });
+
+    // --- ИНИЦИАЛИЗАЦИЯ ---
     function init() {
         const isSetup = localStorage.getItem('ppay_setup');
         
@@ -317,9 +313,7 @@
                 const res = await fetch(API_URL + '/api/status');
                 const data = await res.json();
                 handleApiState(data);
-            } catch (e) {
-                console.log("Ошибка связи с API");
-            }
+            } catch (e) {}
         }, 1000);
     }
 
@@ -364,9 +358,7 @@
     }
 
     async function sendApiPay() {
-        try {
-            await fetch(API_URL + '/api/pay', { method: 'POST' });
-        } catch(e) { console.log("Ошибка отправки оплаты"); }
+        try { await fetch(API_URL + '/api/pay', { method: 'POST' }); } catch(e) {}
     }
 
     function handlePaymentClick(event) {
@@ -385,6 +377,7 @@
     function showVideo(event) {
         if(event) event.stopPropagation();
         videoOverlay.style.display = 'flex';
+        videoElement.currentTime = 0;
         videoElement.play().catch(e => console.log("Видео не может быть воспроизведено"));
         clearTimeout(idleTimer); 
     }
@@ -415,7 +408,7 @@
         }, true);
     });
 
-    // --- 5 КЛИКОВ И АДМИНКА (С КАСТОМНЫМ ОКНОМ) ---
+    // --- 5 КЛИКОВ И АДМИНКА ---
     let logoClicks = 0;
     let clickTimer;
     function logoClick() {
@@ -451,7 +444,6 @@
     function changeMode(newMode) {
         currentMode = newMode;
         localStorage.setItem('ppay_mode', currentMode);
-        
         alert("Режим изменен и сохранен!");
         closeAdmin();
         startMode(newMode);
@@ -492,10 +484,17 @@
         payBgVideo.pause();
         document.getElementById('success-overlay').style.display = 'flex';
         
+        // Проигрываем звук оплаты
+        try {
+            paySound.currentTime = 0;
+            paySound.play().catch(e => console.log("Звук не проигрался:", e));
+        } catch(e) {}
+
         successVideo.currentTime = 0;
         successVideo.muted = false; 
         successVideo.play().catch(e => {
-            console.log("Видео успеха не найдено, принудительный сброс через 3 сек");
+            successVideo.muted = true; 
+            successVideo.play().catch(e2 => console.log("Видео успеха не играет вообще:", e2));
             setTimeout(successVideo.onended, 3000);
         });
 
