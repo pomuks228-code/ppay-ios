@@ -14,8 +14,9 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
         
-      - name: Build App
+      - name: Clean and Build App
         run: |
+          xcodebuild clean -project PPayTerminal.xcodeproj -scheme PPayTerminal
           xcodebuild -project PPayTerminal.xcodeproj -scheme PPayTerminal -sdk iphoneos -configuration Release -derivedDataPath ./build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
           
       - name: Package IPA
