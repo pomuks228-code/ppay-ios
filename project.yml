@@ -12,6 +12,7 @@ targets:
       - index.html
       - path: assets
         type: folder
+      - Assets.xcassets
     settings:
       base:
         INFOPLIST_FILE: Sources/Info.plist
