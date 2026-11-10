@@ -3,13 +3,15 @@ import WebKit
 
 struct WebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
-        webView.configuration.allowsInlineMediaPlayback = true
-        webView.configuration.mediaTypesRequiringUserActionForPlayback = []
+        // СОЗДАЕМ КОНФИГУРАЦИЮ ДО СОЗДАНИЯ WEBVIEW
+        let config = WKWebViewConfiguration()
+        config.allowsInlineMediaPlayback = true
+        config.mediaTypesRequiringUserActionForPlayback = []
+        
+        let webView = WKWebView(frame: .zero, configuration: config)
         
         // Ищем файл index.html
         if let indexURL = Bundle.main.url(forResource: "index", withExtension: "html") {
-            // Разрешаем чтение из ВСЕЙ корневой папки приложения
             webView.loadFileURL(indexURL, allowingReadAccessTo: Bundle.main.bundleURL)
         }
         
