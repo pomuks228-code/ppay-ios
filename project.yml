@@ -10,7 +10,8 @@ targets:
     sources: 
       - Sources
       - index.html
-      - assets
+      - path: assets
+        type: folder
     settings:
       base:
         INFOPLIST_FILE: Sources/Info.plist
